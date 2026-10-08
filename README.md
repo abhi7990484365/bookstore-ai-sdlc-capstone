@@ -27,6 +27,11 @@ API docs: http://127.0.0.1:8000/docs
 `category`, `format` (hardcover, paperback, eBook, audiobook), `language` (English, Spanish, French, German),
 `publicationDate` (last30days, last6months, lastyear) and `minRating` (3 or 4).
 
+Values are case-sensitive (for example `eBook`, not `ebook`). An empty value (e.g. `minRating=`) means
+"no filter". Any other unsupported value for `category`, `format`, `language`, `publicationDate` or
+`minRating` (such as `format=pdf`, `minRating=abc`, `3.5`, `0`, `-1` or `5`) returns HTTP 400 with a
+`detail` message.
+
 Example: `/api/books?category=Non-Fiction&format=hardcover&publicationDate=lastyear&minRating=4`
 
 Seed dates are relative to the day you run the seed, so re-run `python -m scripts.seed` to refresh them.

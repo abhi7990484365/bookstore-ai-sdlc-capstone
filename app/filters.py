@@ -2,6 +2,8 @@ import calendar
 from datetime import date, timedelta
 
 CATEGORIES = ("Fiction", "Non-Fiction")
+FORMATS = ("hardcover", "paperback", "eBook", "audiobook")
+LANGUAGES = ("English", "Spanish", "French", "German")
 PUBLICATION_WINDOWS = ("last30days", "last6months", "lastyear")
 MIN_RATINGS = (3, 4)
 
@@ -34,7 +36,7 @@ def build_books_query(
     book_format: str | None = None,
     language: str | None = None,
     publication_window: str | None = None,
-    min_rating: int | None = None,
+    min_rating: str | None = None,
     today: date | None = None,
 ) -> tuple[str, list]:
     """Build one parameterized query shared by every category; filters combine with AND."""
@@ -47,20 +49,25 @@ def build_books_query(
         conditions.append("category = ?")
         params.append(category)
     if book_format:
+        if book_format not in FORMATS:
+            raise InvalidFilter("Unsupported format")
         conditions.append("format = ?")
         params.append(book_format)
     if language:
+        if language not in LANGUAGES:
+            raise InvalidFilter("Unsupported language")
         conditions.append("language = ?")
         params.append(language)
     if publication_window:
         cutoff = publication_cutoff(publication_window, today)
         conditions.append("publication_date >= ?")
         params.append(cutoff.isoformat())
-    if min_rating is not None:
-        if min_rating not in MIN_RATINGS:
+    if min_rating:
+        rating = {str(value): value for value in MIN_RATINGS}.get(min_rating)
+        if rating is None:
             raise InvalidFilter("Unsupported minRating")
         conditions.append("customer_rating >= ?")
-        params.append(min_rating)
+        params.append(rating)
 
     query = "SELECT * FROM books"
     if conditions:

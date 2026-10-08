@@ -40,7 +40,7 @@ def test_category_only_returns_that_category(client, category):
     assert all(book["category"] == category for book in books)
 
 def test_empty_filter_values_are_ignored(client):
-    assert fetch(client, category="", format="", language="", publicationDate="") == fetch(client)
+    assert fetch(client, category="", format="", language="", publicationDate="", minRating="") == fetch(client)
 
 
 # Book format
@@ -186,18 +186,67 @@ def matches(book, filters):
 
 @pytest.mark.parametrize("params", [
     {"publicationDate": "lastcentury"},
-    {"minRating": 5},
     {"minRating": 2},
     {"category": "Unknown", "format": "hardcover"},
 ])
 def test_invalid_filter_values_return_400(client, params):
     assert client.get("/api/books", params=params).status_code == 400
 
-def test_sql_injection_attempt_is_treated_as_literal(client):
-    response = client.get("/api/books", params={"format": "x' OR '1'='1"})
-    assert response.status_code == 200
-    assert response.json() == []
-    assert fetch(client)
+def assert_rejected(client, **params):
+    response = client.get("/api/books", params=params)
+    assert response.status_code == 400, response.text
+    assert isinstance(response.json()["detail"], str)
+
+@pytest.mark.parametrize("category", [None, *CATEGORIES])
+@pytest.mark.parametrize("bad_format", ["pdf", "ebook", "EBOOK", "Hardcover", " hardcover", "hardcover ", "x"])
+def test_invalid_format_returns_400(client, category, bad_format):
+    params = {"format": bad_format}
+    if category:
+        params["category"] = category
+    assert_rejected(client, **params)
+
+@pytest.mark.parametrize("category", [None, *CATEGORIES])
+@pytest.mark.parametrize("bad_language", ["Klingon", "english", "ENGLISH", " English", "English ", "x"])
+def test_invalid_language_returns_400(client, category, bad_language):
+    params = {"language": bad_language}
+    if category:
+        params["category"] = category
+    assert_rejected(client, **params)
+
+@pytest.mark.parametrize("book_format", FORMATS)
+def test_valid_format_values_are_accepted_exactly(client, book_format):
+    books = fetch(client, format=book_format)
+    assert books
+    assert {b["format"] for b in books} == {book_format}
+
+@pytest.mark.parametrize("language", LANGUAGES)
+def test_valid_language_values_are_accepted_exactly(client, language):
+    books = fetch(client, language=language)
+    assert books
+    assert {b["language"] for b in books} == {language}
+
+def test_min_rating_empty_means_no_rating_filter(client):
+    assert fetch(client, minRating="") == fetch(client)
+    assert fetch(client, category="Fiction", minRating="") == fetch(client, category="Fiction")
+
+@pytest.mark.parametrize("bad_rating", ["abc", "3.5", "0", "-1", "5"])
+def test_invalid_min_rating_returns_400(client, bad_rating):
+    assert_rejected(client, minRating=bad_rating)
+
+@pytest.mark.parametrize("min_rating", [3, 4])
+def test_valid_min_rating_is_accepted(client, min_rating):
+    books = fetch(client, minRating=min_rating)
+    assert books
+    assert all(b["customer_rating"] >= min_rating for b in books)
+
+def test_invalid_value_is_rejected_even_alongside_valid_filters(client):
+    assert_rejected(client, category="Fiction", format="hardcover", minRating="abc")
+
+def test_sql_injection_attempt_is_rejected_and_leaves_data_intact(client):
+    before = fetch(client)
+    assert_rejected(client, format="x' OR '1'='1")
+    assert_rejected(client, language="x'; DROP TABLE books;--")
+    assert fetch(client) == before
 
 
 # Date helpers

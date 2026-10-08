@@ -11,7 +11,7 @@ def list_books(
     book_format: str | None = Query(default=None, alias="format"),
     language: str | None = Query(default=None),
     publication_date: str | None = Query(default=None, alias="publicationDate"),
-    min_rating: int | None = Query(default=None, alias="minRating"),
+    min_rating: str | None = Query(default=None, alias="minRating"),
 ):
     try:
         query, params = build_books_query(
