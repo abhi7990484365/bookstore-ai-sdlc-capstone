@@ -14,6 +14,42 @@
 <button class="tab" data-category="Fiction">Fiction Books</button>
 <button class="tab" data-category="Non-Fiction">Non-Fiction Books</button>
 </nav>
+<form id="filters" class="filters" aria-label="Advanced filters">
+<label>Book Format
+<select id="filter-format" name="format">
+<option value="">Any</option>
+<option value="hardcover">Hardcover</option>
+<option value="paperback">Paperback</option>
+<option value="eBook">eBook</option>
+<option value="audiobook">Audiobook</option>
+</select>
+</label>
+<label>Language
+<select id="filter-language" name="language">
+<option value="">Any</option>
+<option value="English">English</option>
+<option value="Spanish">Spanish</option>
+<option value="French">French</option>
+<option value="German">German</option>
+</select>
+</label>
+<label>Publication Date
+<select id="filter-publicationDate" name="publicationDate">
+<option value="">Any time</option>
+<option value="last30days">Last 30 days</option>
+<option value="last6months">Last 6 months</option>
+<option value="lastyear">Last year</option>
+</select>
+</label>
+<label>Customer Reviews
+<select id="filter-minRating" name="minRating">
+<option value="">Any rating</option>
+<option value="3">3 stars and above</option>
+<option value="4">4 stars and above</option>
+</select>
+</label>
+<button type="button" id="clear-filters" class="clear">Clear Filters</button>
+</form>
 <h2 id="section-title">All Books</h2>
 <section id="book-list" class="book-grid" aria-live="polite"></section>
 <p id="error" class="error" hidden></p>
